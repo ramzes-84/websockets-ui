@@ -2,23 +2,26 @@ export enum reqTypes {
   Reg = "reg",
 }
 
-export interface GameRequest {
+export enum errMsgs {
+  noErr = "",
+  unexpected = "Unexpected server error.",
+  userExist = "Wrong password.",
+}
+
+export interface Request {
   type: reqTypes;
   data: UserData;
   id: 0;
 }
 
-interface UserData {
+export interface UserData {
   name: string;
   password: string;
 }
 
-export interface RegRes {
+export interface ResData {
   name: string;
   index: number;
   error: boolean;
-  errorText: string;
+  errorText: errMsgs;
 }
-// export interface ResBeforeStringify extends GameRequest {
-//   data: string;
-// }

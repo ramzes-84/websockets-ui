@@ -12,6 +12,6 @@ wss.on("connection", (ws) => {
 
   ws.on("message", (data) => {
     const parsedReq = reqParser(data);
-    gameController[parsedReq.type](parsedReq, ws);
+    gameController[parsedReq.type](parsedReq.data, ws);
   });
 });
