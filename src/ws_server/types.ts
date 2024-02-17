@@ -2,6 +2,8 @@ export enum reqTypes {
   Reg = "reg",
   NewRoom = "create_room",
   AddToRoom = "add_user_to_room",
+  Winners = "update_winners",
+  Rooms = "update_room",
 }
 
 export enum errMsgs {
