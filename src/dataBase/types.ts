@@ -1,18 +1,7 @@
 import { WebSocket } from "ws";
 import { Room } from "./Room";
-
-export interface IUser {
-  id: number;
-  name: string;
-  password: string;
-  wins: number;
-  ownWS: IOwnWebSocket;
-}
-
-// export interface IRoom {
-//   id: number;
-//   roomUsers: RoomUsers[];
-// }
+import { User } from "./User";
+import { Game } from "./Game";
 
 export interface RoomUsers {
   index: number;
@@ -20,11 +9,16 @@ export interface RoomUsers {
 }
 
 export interface DataBase {
-  users: IUser[];
+  users: User[];
   rooms: Room[];
+  games: Game[];
 }
 
 export interface IOwnWebSocket extends WebSocket {
   userName: string;
   userIndex: number;
+}
+
+export interface Player extends User {
+  playerId: 1 | 2;
 }

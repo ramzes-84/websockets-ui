@@ -1,35 +1,32 @@
 import { User } from "../dataBase/User";
-import { dataBase } from "../dataBase/dataBase";
-import { DataBase, IOwnWebSocket, IUser } from "../dataBase/types";
+import { dB } from "../dataBase/dataBase";
+import { DataBase, IOwnWebSocket } from "../dataBase/types";
 import { ResData, UserData, errMsgs, reqTypes } from "../ws_server/types";
 import { packRes } from "../ws_server/utils";
 
 export const emitEvent = (type: reqTypes, dB: DataBase) => {
   if (type === reqTypes.Winners) {
     dB.users.forEach((user) => {
-      user.ownWS.send(packRes(reqTypes.Winners, dataBase.users));
+      user.ownWS.send(packRes(reqTypes.Winners, dB.users));
     });
   }
   if (type === reqTypes.Rooms) {
     dB.users.forEach((user) => {
-      user.ownWS.send(packRes(reqTypes.Rooms, dataBase.rooms));
+      user.ownWS.send(packRes(reqTypes.Rooms, dB.rooms));
     });
   }
 };
 
 export const isRegisteredUser = (
   user: UserData,
-  users: IUser[]
-): false | IUser => {
+  users: User[]
+): false | User => {
   const foundUser = users.find((item) => item.name === user.name);
   if (foundUser) return foundUser;
   return false;
 };
 
-export const isCorrectPassw = (
-  user: UserData,
-  users: IUser[]
-): false | IUser => {
+export const isCorrectPassw = (user: UserData, users: User[]): false | User => {
   const foundUser = users.find((item) => item.name === user.name);
   if (foundUser?.password === user.password) return foundUser;
   return false;
@@ -41,8 +38,8 @@ export const createLoginRes = ({
   newUserData,
   ws,
 }: {
-  registeredUser: false | IUser;
-  userWithPassw: false | IUser;
+  registeredUser: false | User;
+  userWithPassw: false | User;
   newUserData: UserData;
   ws: IOwnWebSocket;
 }) => {
@@ -71,7 +68,7 @@ export const createLoginRes = ({
     };
   } else {
     const newUser = new User(newUserData, ws);
-    dataBase.users.push(newUser);
+    dB.users.push(newUser);
     userDataRes = {
       name: newUser.name,
       index: newUser.id,

@@ -1,4 +1,5 @@
-import { IUser, RoomUsers } from "./types";
+import { User } from "./User";
+import { RoomUsers } from "./types";
 
 export class Room {
   roomId: number;
@@ -6,7 +7,7 @@ export class Room {
 
   static roomIndex = 0;
 
-  constructor(creator: IUser) {
+  constructor(creator: User) {
     Room.roomIndex++;
     this.roomId = Room.roomIndex;
     const firstPlayer: RoomUsers = { index: creator.id, name: creator.name };

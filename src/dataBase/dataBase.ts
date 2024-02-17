@@ -1,3 +1,3 @@
 import { DataBase } from "./types";
 
-export const dataBase: DataBase = { users: [], rooms: [] };
+export const dB: DataBase = { users: [], rooms: [], games: [] };
