@@ -1,3 +1,4 @@
+import { UserCreator } from "../dataBase/User";
 import { dataBase } from "../dataBase/dataBase";
 import { User } from "../dataBase/types";
 import { ResData, UserData, errMsgs } from "../ws_server/types";
@@ -47,7 +48,7 @@ export const createLoginRes = ({
       errorText: errMsgs.userExist,
     };
   } else {
-    const newUser = { ...newUserData, id: Date.now() };
+    const newUser = new UserCreator(newUserData);
     dataBase.users.push(newUser);
     userDataRes = {
       name: newUser.name,
