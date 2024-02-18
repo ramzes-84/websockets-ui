@@ -1,5 +1,4 @@
-import { UserData } from "../ws_server/types";
-import { IOwnWebSocket } from "./types";
+import { IOwnWebSocket, UserData } from "../types";
 
 export class User {
   name: string;

@@ -1,5 +1,5 @@
+import { RoomUsers } from "../types";
 import { User } from "./User";
-import { RoomUsers } from "./types";
 
 export class Room {
   roomId: number;

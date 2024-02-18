@@ -1,18 +1,36 @@
 import { dB } from "../dataBase/dataBase";
-import { NewGameRes, RoomIndex, UserData, reqTypes } from "../ws_server/types";
+import {
+  IOwnWebSocket,
+  NewGameRes,
+  RoomIndex,
+  Ships,
+  UserData,
+  reqTypes,
+} from "../types";
 import { packRes } from "../ws_server/utils";
 import {
   createLoginRes,
+  createPlayerMap,
   emitEvent,
   isCorrectPassw,
   isRegisteredUser,
 } from "./utils";
-import { IOwnWebSocket } from "../dataBase/types";
 import { Room } from "../dataBase/Room";
 import { Game } from "../dataBase/Game";
 
 export const gameController = {
-  [reqTypes.NewGame]() {},
+  [reqTypes.AddShips](ws: IOwnWebSocket, ships: Ships) {
+    const game = dB.games.find((game) => game.idGame === ships.gameId);
+    if (game) {
+      game.players[ships.indexPlayer].ships = ships.ships;
+      game.players[ships.indexPlayer].playerMap = createPlayerMap(ships);
+      if (game.players.every((player) => !!player.playerMap === true)) {
+        emitEvent(reqTypes.Start, dB, game);
+      }
+    }
+  },
+  [reqTypes.Start]() {}, //REMOVE
+  [reqTypes.NewGame]() {}, //REMOVE
   [reqTypes.Reg](ws: IOwnWebSocket, newUserData: UserData) {
     const registeredUser = isRegisteredUser(newUserData, dB.users);
     const userWithPassw = isCorrectPassw(newUserData, dB.users);
@@ -50,13 +68,15 @@ export const gameController = {
       dB.games.push(game);
       dB.rooms.splice(roomIndexInArr, 1);
       this[reqTypes.Rooms]();
-      [game.playerOne, game.playerTwo].forEach((user) => {
+      game.players.forEach((user) => {
         const res: NewGameRes = {
           idGame: game.idGame,
           idPlayer: user.playerId,
         };
-        user.ownWS.send(packRes(reqTypes.NewGame, res));
+        user.userObj.ownWS.send(packRes(reqTypes.NewGame, res));
       });
     }
   },
 };
+
+// export const getGameAndPlayers = (gameId: number, dB)

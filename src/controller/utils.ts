@@ -1,10 +1,21 @@
+import { Game } from "../dataBase/Game";
 import { User } from "../dataBase/User";
 import { dB } from "../dataBase/dataBase";
-import { DataBase, IOwnWebSocket } from "../dataBase/types";
-import { ResData, UserData, errMsgs, reqTypes } from "../ws_server/types";
+import {
+  BoardCell,
+  DataBase,
+  IOwnWebSocket,
+  ResData,
+  Ship,
+  Ships,
+  StartGameRes,
+  UserData,
+  errMsgs,
+  reqTypes,
+} from "../types";
 import { packRes } from "../ws_server/utils";
 
-export const emitEvent = (type: reqTypes, dB: DataBase) => {
+export const emitEvent = (type: reqTypes, dB: DataBase, game?: Game) => {
   if (type === reqTypes.Winners) {
     dB.users.forEach((user) => {
       user.ownWS.send(packRes(reqTypes.Winners, dB.users));
@@ -13,6 +24,15 @@ export const emitEvent = (type: reqTypes, dB: DataBase) => {
   if (type === reqTypes.Rooms) {
     dB.users.forEach((user) => {
       user.ownWS.send(packRes(reqTypes.Rooms, dB.rooms));
+    });
+  }
+  if (type === reqTypes.Start && game) {
+    game.players.forEach((player) => {
+      const startGameRes: StartGameRes = {
+        ships: player.ships as Ship[],
+        currentPlayerIndex: player.playerId,
+      };
+      player.userObj.ownWS.send(packRes(reqTypes.Start, startGameRes));
     });
   }
 };
@@ -77,4 +97,29 @@ export const createLoginRes = ({
     };
   }
   return userDataRes;
+};
+
+export const createPlayerMap = ({ ships }: Ships): BoardCell[][] => {
+  const playerMap = Array.from({ length: 10 }, () =>
+    Array.from({ length: 10 }, () => ({
+      ...{ shipIndex: -1, fired: false },
+    }))
+  );
+
+  ships.forEach((ship, index) => {
+    ship.health = ship.length;
+
+    const { x, y } = ship.position;
+
+    for (let i = 0; i < ship.length; i++) {
+      const cell = ship.direction
+        ? playerMap[x]?.[y + i]
+        : playerMap[x + i]?.[y];
+
+      if (cell && cell.shipIndex === -1) {
+        cell.shipIndex = index;
+      }
+    }
+  });
+  return playerMap;
 };
