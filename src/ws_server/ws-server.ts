@@ -2,7 +2,14 @@ import { Server } from "ws";
 import { httpServer } from "../http_server";
 import { unpackReq } from "./utils";
 import { gameController } from "../controller/controller";
-import { IOwnWebSocket, RoomIndex, Ships, UserData, reqTypes } from "../types";
+import {
+  Hit,
+  IOwnWebSocket,
+  RoomIndex,
+  Ships,
+  UserData,
+  reqTypes,
+} from "../types";
 
 export const wss = new Server({
   server: httpServer,
@@ -19,6 +26,8 @@ wss.on("connection", (ws: IOwnWebSocket) => {
       gameController[parsedReq.type](ws, parsedReq.data as RoomIndex);
     } else if (parsedReq.type === reqTypes.AddShips) {
       gameController[parsedReq.type](ws, parsedReq.data as Ships);
+    } else if (parsedReq.type === reqTypes.Attack) {
+      gameController[parsedReq.type](ws, parsedReq.data as Hit);
     } else gameController[parsedReq.type](ws);
   });
 });

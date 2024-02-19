@@ -12,6 +12,8 @@ export enum reqTypes {
   Rooms = "update_room",
   AddShips = "add_ships",
   Start = "start_game",
+  Turn = "turn",
+  Attack = "attack",
 }
 
 export type ControllerMethods = Exclude<
@@ -27,8 +29,19 @@ export enum errMsgs {
 
 export interface Request {
   type: reqTypes;
-  data: UserData | RoomIndex | Ships;
+  data: UserData | RoomIndex | Ships | TurnInfo | Hit;
   id: 0;
+}
+
+export interface Hit {
+  gameId: number;
+  x: number;
+  y: number;
+  indexPlayer: number;
+}
+
+export interface TurnInfo {
+  currentPlayer: number;
 }
 
 export interface UserData {

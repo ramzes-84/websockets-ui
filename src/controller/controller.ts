@@ -1,5 +1,7 @@
 import { dB } from "../dataBase/dataBase";
 import {
+  BoardCell,
+  Hit,
   IOwnWebSocket,
   NewGameRes,
   RoomIndex,
@@ -26,9 +28,23 @@ export const gameController = {
       game.players[ships.indexPlayer].playerMap = createPlayerMap(ships);
       if (game.players.every((player) => !!player.playerMap === true)) {
         emitEvent(reqTypes.Start, dB, game);
+        emitEvent(reqTypes.Turn, dB, game);
       }
     }
   },
+  [reqTypes.Attack](ws: IOwnWebSocket, { x, y, gameId, indexPlayer }: Hit) {
+    const game = dB.games.find((game) => game.idGame === gameId);
+    const attackedPlayer =
+      indexPlayer === 0 ? game?.players[1] : game?.players[0];
+    if (game && attackedPlayer?.playerMap) {
+      const cell = attackedPlayer.playerMap[x][y] as BoardCell;
+      cell.fired = true;
+      // if (cell.shipIndex >= 0) {
+      //   const ship = attackedPlayer.ships[cell.shipIndex];
+      // }
+    }
+  },
+  [reqTypes.Turn]() {}, //REMOVE
   [reqTypes.Start]() {}, //REMOVE
   [reqTypes.NewGame]() {}, //REMOVE
   [reqTypes.Reg](ws: IOwnWebSocket, newUserData: UserData) {

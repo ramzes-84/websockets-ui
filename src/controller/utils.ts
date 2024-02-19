@@ -9,6 +9,7 @@ import {
   Ship,
   Ships,
   StartGameRes,
+  TurnInfo,
   UserData,
   errMsgs,
   reqTypes,
@@ -24,6 +25,14 @@ export const emitEvent = (type: reqTypes, dB: DataBase, game?: Game) => {
   if (type === reqTypes.Rooms) {
     dB.users.forEach((user) => {
       user.ownWS.send(packRes(reqTypes.Rooms, dB.rooms));
+    });
+  }
+  if (type === reqTypes.Turn && game) {
+    game.players.forEach((player) => {
+      const turnInfoRes: TurnInfo = {
+        currentPlayer: game.isHostsTurn ? 0 : 1,
+      };
+      player.userObj.ownWS.send(packRes(reqTypes.Turn, turnInfoRes));
     });
   }
   if (type === reqTypes.Start && game) {
