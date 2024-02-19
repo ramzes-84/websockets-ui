@@ -36,22 +36,26 @@ export const gameController = {
   },
   [reqTypes.Attack](ws: IOwnWebSocket, { x, y, gameId, indexPlayer }: Hit) {
     const game = dB.games.find((game) => game.idGame === gameId);
+    // const attackingPlayer = game?.players[indexPlayer];
     const attackedPlayer =
       indexPlayer === 0 ? game?.players[1] : game?.players[0];
     if (game && attackedPlayer?.playerMap) {
       const cell = attackedPlayer.playerMap[x][y] as BoardCell;
       cell.fired = true;
       if (cell.shipIndex >= 0) {
-        const ship = attackedPlayer.ships![cell.shipIndex];
+        // const ship = attackedPlayer.ships![cell.shipIndex];
       } else {
-        const attackFeedback: AttackFeedbackRes = {
-          position: {
-            x,
-            y,
-          },
-          currentPlayer: attackedPlayer.playerId,
-          status: Status.miss,
-        };
+        game.players.forEach((player) => {
+          player.userObj.ownWS.send(
+            packRes(reqTypes.Attack, {
+              position: { x, y },
+              currentPlayer: indexPlayer,
+              status: Status.miss,
+            })
+          );
+        });
+        game.isHostsTurn = !game.isHostsTurn;
+        emitEvent(reqTypes.Turn, dB, game);
       }
     }
   },

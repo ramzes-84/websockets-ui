@@ -32,7 +32,7 @@ export interface Hit {
   gameId: number;
   x: number;
   y: number;
-  indexPlayer: number;
+  indexPlayer: 1 | 0;
 }
 
 export enum Status {
