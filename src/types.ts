@@ -16,11 +16,6 @@ export enum reqTypes {
   Attack = "attack",
 }
 
-export type ControllerMethods = Exclude<
-  reqTypes,
-  reqTypes.Start | reqTypes.NewGame
->;
-
 export enum errMsgs {
   noErr = "",
   unexpected = "Unexpected server error.",
@@ -38,6 +33,18 @@ export interface Hit {
   x: number;
   y: number;
   indexPlayer: number;
+}
+
+export enum Status {
+  "miss",
+  "killed",
+  "shot",
+}
+
+export interface AttackFeedbackRes {
+  position: Position;
+  currentPlayer: 0 | 1;
+  status: Status;
 }
 
 export interface TurnInfo {
@@ -76,12 +83,14 @@ export interface Ships {
   indexPlayer: number;
 }
 
+type Position = {
+  x: number;
+  y: number;
+};
+
 export interface Ship {
   health: number;
-  position: {
-    x: number;
-    y: number;
-  };
+  position: Position;
   direction: boolean;
   length: number;
   type: string;

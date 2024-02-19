@@ -1,11 +1,13 @@
 import { dB } from "../dataBase/dataBase";
 import {
+  AttackFeedbackRes,
   BoardCell,
   Hit,
   IOwnWebSocket,
   NewGameRes,
   RoomIndex,
   Ships,
+  Status,
   UserData,
   reqTypes,
 } from "../types";
@@ -39,9 +41,18 @@ export const gameController = {
     if (game && attackedPlayer?.playerMap) {
       const cell = attackedPlayer.playerMap[x][y] as BoardCell;
       cell.fired = true;
-      // if (cell.shipIndex >= 0) {
-      //   const ship = attackedPlayer.ships[cell.shipIndex];
-      // }
+      if (cell.shipIndex >= 0) {
+        const ship = attackedPlayer.ships![cell.shipIndex];
+      } else {
+        const attackFeedback: AttackFeedbackRes = {
+          position: {
+            x,
+            y,
+          },
+          currentPlayer: attackedPlayer.playerId,
+          status: Status.miss,
+        };
+      }
     }
   },
   [reqTypes.Turn]() {}, //REMOVE
@@ -94,5 +105,3 @@ export const gameController = {
     }
   },
 };
-
-// export const getGameAndPlayers = (gameId: number, dB)

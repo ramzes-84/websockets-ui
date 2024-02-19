@@ -1,5 +1,6 @@
 import { RawData } from "ws";
 import {
+  AttackFeedbackRes,
   NewGameRes,
   Request,
   ResData,
@@ -23,7 +24,14 @@ export const unpackReq = (data: RawData): Request => {
 
 export const packRes = (
   type: reqTypes,
-  data: ResData | User[] | Room[] | NewGameRes | StartGameRes | TurnInfo
+  data:
+    | ResData
+    | User[]
+    | Room[]
+    | NewGameRes
+    | StartGameRes
+    | TurnInfo
+    | AttackFeedbackRes
 ): string => {
   const stringifiedData = JSON.stringify(data);
   const response = { type, data: stringifiedData, id: 0 };

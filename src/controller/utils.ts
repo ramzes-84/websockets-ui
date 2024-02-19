@@ -19,12 +19,12 @@ import { packRes } from "../ws_server/utils";
 export const emitEvent = (type: reqTypes, dB: DataBase, game?: Game) => {
   if (type === reqTypes.Winners) {
     dB.users.forEach((user) => {
-      user.ownWS.send(packRes(reqTypes.Winners, dB.users));
+      user.ownWS.send(packRes(type, dB.users));
     });
   }
   if (type === reqTypes.Rooms) {
     dB.users.forEach((user) => {
-      user.ownWS.send(packRes(reqTypes.Rooms, dB.rooms));
+      user.ownWS.send(packRes(type, dB.rooms));
     });
   }
   if (type === reqTypes.Turn && game) {
@@ -32,7 +32,7 @@ export const emitEvent = (type: reqTypes, dB: DataBase, game?: Game) => {
       const turnInfoRes: TurnInfo = {
         currentPlayer: game.isHostsTurn ? 0 : 1,
       };
-      player.userObj.ownWS.send(packRes(reqTypes.Turn, turnInfoRes));
+      player.userObj.ownWS.send(packRes(type, turnInfoRes));
     });
   }
   if (type === reqTypes.Start && game) {
@@ -41,7 +41,7 @@ export const emitEvent = (type: reqTypes, dB: DataBase, game?: Game) => {
         ships: player.ships as Ship[],
         currentPlayerIndex: player.playerId,
       };
-      player.userObj.ownWS.send(packRes(reqTypes.Start, startGameRes));
+      player.userObj.ownWS.send(packRes(type, startGameRes));
     });
   }
 };
