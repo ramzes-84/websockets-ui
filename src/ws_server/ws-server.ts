@@ -5,6 +5,7 @@ import { gameController } from "../controller/controller";
 import {
   Hit,
   IOwnWebSocket,
+  RandomHit,
   RoomIndex,
   Ships,
   UserData,
@@ -28,6 +29,8 @@ wss.on("connection", (ws: IOwnWebSocket) => {
       gameController[parsedReq.type](ws, parsedReq.data as Ships);
     } else if (parsedReq.type === reqTypes.Attack) {
       gameController[parsedReq.type](ws, parsedReq.data as Hit);
+    } else if (parsedReq.type === reqTypes.Random) {
+      gameController[parsedReq.type](ws, parsedReq.data as RandomHit);
     } else gameController[parsedReq.type](ws);
   });
 });

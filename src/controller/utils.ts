@@ -132,3 +132,11 @@ export const createPlayerMap = ({ ships }: Ships): BoardCell[][] => {
   });
   return playerMap;
 };
+
+export const generateCoords = () => {
+  const min = 0;
+  const max = 10;
+  const x = Math.floor(Math.random() * (max - min) + min);
+  const y = Math.floor(Math.random() * (max - min) + min);
+  return { x, y };
+};

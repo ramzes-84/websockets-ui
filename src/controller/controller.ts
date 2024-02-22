@@ -1,10 +1,11 @@
 import { dB } from "../dataBase/dataBase";
 import {
-  AttackFeedbackRes,
   BoardCell,
   Hit,
   IOwnWebSocket,
   NewGameRes,
+  Player,
+  RandomHit,
   RoomIndex,
   Ships,
   Status,
@@ -16,6 +17,7 @@ import {
   createLoginRes,
   createPlayerMap,
   emitEvent,
+  generateCoords,
   isCorrectPassw,
   isRegisteredUser,
 } from "./utils";
@@ -36,27 +38,57 @@ export const gameController = {
   },
   [reqTypes.Attack](ws: IOwnWebSocket, { x, y, gameId, indexPlayer }: Hit) {
     const game = dB.games.find((game) => game.idGame === gameId);
-    // const attackingPlayer = game?.players[indexPlayer];
+    if (game?.isHostsTurn === !indexPlayer) {
+      const attackedPlayer =
+        indexPlayer === 0 ? game?.players[1] : game?.players[0];
+      if (game && attackedPlayer?.playerMap) {
+        const cell = attackedPlayer.playerMap[x][y] as BoardCell;
+        cell.fired = true;
+        if (cell.shipIndex >= 0) {
+          const ship = attackedPlayer.ships![cell.shipIndex];
+          let status: Status = Status.shot;
+          if (ship.health > 1) {
+            status = Status.shot;
+          } else if (ship.health === 1) {
+            status = Status.killed;
+          }
+          ship.health -= 1;
+          game.players.forEach((player) => {
+            player.userObj.ownWS.send(
+              packRes(reqTypes.Attack, {
+                position: { x, y },
+                currentPlayer: indexPlayer,
+                status,
+              })
+            );
+          });
+          emitEvent(reqTypes.Turn, dB, game);
+        } else {
+          game.players.forEach((player) => {
+            player.userObj.ownWS.send(
+              packRes(reqTypes.Attack, {
+                position: { x, y },
+                currentPlayer: indexPlayer,
+                status: Status.miss,
+              })
+            );
+          });
+          game.isHostsTurn = !game.isHostsTurn;
+          emitEvent(reqTypes.Turn, dB, game);
+        }
+      }
+    }
+  },
+  [reqTypes.Random](ws: IOwnWebSocket, { gameId, indexPlayer }: RandomHit) {
+    const game = dB.games.find((game) => game.idGame === gameId);
     const attackedPlayer =
       indexPlayer === 0 ? game?.players[1] : game?.players[0];
-    if (game && attackedPlayer?.playerMap) {
-      const cell = attackedPlayer.playerMap[x][y] as BoardCell;
-      cell.fired = true;
-      if (cell.shipIndex >= 0) {
-        // const ship = attackedPlayer.ships![cell.shipIndex];
-      } else {
-        game.players.forEach((player) => {
-          player.userObj.ownWS.send(
-            packRes(reqTypes.Attack, {
-              position: { x, y },
-              currentPlayer: indexPlayer,
-              status: Status.miss,
-            })
-          );
-        });
-        game.isHostsTurn = !game.isHostsTurn;
-        emitEvent(reqTypes.Turn, dB, game);
+    if (game && attackedPlayer) {
+      let { x, y } = generateCoords();
+      while (attackedPlayer.playerMap![x][y].fired) {
+        ({ x, y } = generateCoords());
       }
+      this[reqTypes.Attack](ws, { x, y, gameId, indexPlayer });
     }
   },
   [reqTypes.Turn]() {}, //REMOVE

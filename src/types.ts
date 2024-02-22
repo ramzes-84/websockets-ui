@@ -14,6 +14,7 @@ export enum reqTypes {
   Start = "start_game",
   Turn = "turn",
   Attack = "attack",
+  Random = "randomAttack",
 }
 
 export enum errMsgs {
@@ -28,17 +29,20 @@ export interface Request {
   id: 0;
 }
 
-export interface Hit {
+export interface RandomHit {
   gameId: number;
-  x: number;
-  y: number;
   indexPlayer: 1 | 0;
 }
 
+export interface Hit extends RandomHit {
+  x: number;
+  y: number;
+}
+
 export enum Status {
-  "miss",
-  "killed",
-  "shot",
+  miss = "miss",
+  killed = "killed",
+  shot = "shot",
 }
 
 export interface AttackFeedbackRes {
@@ -77,10 +81,8 @@ export interface StartGameRes {
   currentPlayerIndex: 0 | 1;
 }
 
-export interface Ships {
-  gameId: number;
+export interface Ships extends RandomHit {
   ships: Ship[];
-  indexPlayer: number;
 }
 
 type Position = {
