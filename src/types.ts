@@ -127,6 +127,7 @@ export interface DataBase {
 }
 
 export interface IOwnWebSocket extends WebSocket {
+  isAlive: boolean;
   userName: string;
   userIndex: number;
 }

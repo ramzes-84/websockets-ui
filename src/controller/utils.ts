@@ -21,7 +21,6 @@ export const emitEvent = (
   type: reqTypes,
   { dB, game, winPlayer }: EmitEventParams
 ) => {
-  console.log(winPlayer, game);
   if (type === reqTypes.Winners && dB) {
     dB.users.forEach((user) => {
       user.ownWS.send(packRes(type, dB.users));

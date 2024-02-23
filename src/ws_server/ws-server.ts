@@ -1,6 +1,6 @@
 import { Server } from "ws";
 import { httpServer } from "../http_server";
-import { unpackReq } from "./utils";
+import { heartbeat, unpackReq } from "./utils";
 import { gameController } from "../controller/controller";
 import {
   Hit,
@@ -14,10 +14,14 @@ import {
 
 export const wss = new Server({
   server: httpServer,
+  clientTracking: true,
 });
 
 wss.on("connection", (ws: IOwnWebSocket) => {
   console.log("Websocket connection succesfully established.");
+
+  ws.isAlive = true;
+  ws.on("pong", () => heartbeat(ws));
 
   ws.on("message", (data) => {
     const parsedReq = unpackReq(data);
@@ -33,4 +37,18 @@ wss.on("connection", (ws: IOwnWebSocket) => {
       gameController[parsedReq.type](ws, parsedReq.data as RandomHit);
     } else gameController[parsedReq.type](ws);
   });
+});
+
+const interval = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if ("isAlive" in ws) {
+      if (ws.isAlive === false) return ws.terminate();
+      ws.isAlive = false;
+      ws.ping();
+    }
+  });
+}, 2000);
+
+wss.on("close", function close() {
+  clearInterval(interval);
 });

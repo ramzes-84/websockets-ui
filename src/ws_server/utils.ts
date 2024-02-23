@@ -1,6 +1,7 @@
 import { RawData } from "ws";
 import {
   AttackFeedbackRes,
+  IOwnWebSocket,
   NewGameRes,
   Request,
   ResData,
@@ -39,3 +40,7 @@ export const packRes = (
   const response = { type, data: stringifiedData, id: 0 };
   return JSON.stringify(response);
 };
+
+export function heartbeat(ws: IOwnWebSocket) {
+  ws.isAlive = true;
+}
