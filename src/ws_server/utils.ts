@@ -6,6 +6,7 @@ import {
   ResData,
   StartGameRes,
   TurnInfo,
+  WinnerRes,
   reqTypes,
 } from "../types";
 import { Room } from "../dataBase/Room";
@@ -32,6 +33,7 @@ export const packRes = (
     | StartGameRes
     | TurnInfo
     | AttackFeedbackRes
+    | WinnerRes
 ): string => {
   const stringifiedData = JSON.stringify(data);
   const response = { type, data: stringifiedData, id: 0 };

@@ -4,7 +4,6 @@ import {
   Hit,
   IOwnWebSocket,
   NewGameRes,
-  Player,
   RandomHit,
   RoomIndex,
   Ships,
@@ -14,6 +13,7 @@ import {
 } from "../types";
 import { packRes } from "../ws_server/utils";
 import {
+  auraCreator,
   createLoginRes,
   createPlayerMap,
   emitEvent,
@@ -31,8 +31,8 @@ export const gameController = {
       game.players[ships.indexPlayer].ships = ships.ships;
       game.players[ships.indexPlayer].playerMap = createPlayerMap(ships);
       if (game.players.every((player) => !!player.playerMap === true)) {
-        emitEvent(reqTypes.Start, dB, game);
-        emitEvent(reqTypes.Turn, dB, game);
+        emitEvent(reqTypes.Start, { dB, game });
+        emitEvent(reqTypes.Turn, { dB, game });
       }
     }
   },
@@ -46,12 +46,7 @@ export const gameController = {
         cell.fired = true;
         if (cell.shipIndex >= 0) {
           const ship = attackedPlayer.ships![cell.shipIndex];
-          let status: Status = Status.shot;
-          if (ship.health > 1) {
-            status = Status.shot;
-          } else if (ship.health === 1) {
-            status = Status.killed;
-          }
+          const status: Status = ship.health > 1 ? Status.shot : Status.killed;
           ship.health -= 1;
           game.players.forEach((player) => {
             player.userObj.ownWS.send(
@@ -62,7 +57,30 @@ export const gameController = {
               })
             );
           });
-          emitEvent(reqTypes.Turn, dB, game);
+          if (status === Status.killed) {
+            const killedShipAura = auraCreator(attackedPlayer, ship);
+            killedShipAura.forEach(({ x, y }) => {
+              game.players.forEach((player) => {
+                player.userObj.ownWS.send(
+                  packRes(reqTypes.Attack, {
+                    position: { x, y },
+                    currentPlayer: indexPlayer,
+                    status: Status.miss,
+                  })
+                );
+              });
+            });
+          }
+          const isPlayerDead = attackedPlayer.ships!.every(
+            (ship) => ship.health === 0
+          );
+          if (isPlayerDead) {
+            emitEvent(reqTypes.Finish, { game, winPlayer: indexPlayer });
+            game.players[indexPlayer].userObj.wins += 1;
+            this[reqTypes.Winners]();
+          } else {
+            emitEvent(reqTypes.Turn, { dB, game });
+          }
         } else {
           game.players.forEach((player) => {
             player.userObj.ownWS.send(
@@ -74,7 +92,7 @@ export const gameController = {
             );
           });
           game.isHostsTurn = !game.isHostsTurn;
-          emitEvent(reqTypes.Turn, dB, game);
+          emitEvent(reqTypes.Turn, { dB, game });
         }
       }
     }
@@ -91,6 +109,7 @@ export const gameController = {
       this[reqTypes.Attack](ws, { x, y, gameId, indexPlayer });
     }
   },
+  [reqTypes.Finish]() {}, //REMOVE
   [reqTypes.Turn]() {}, //REMOVE
   [reqTypes.Start]() {}, //REMOVE
   [reqTypes.NewGame]() {}, //REMOVE
@@ -108,10 +127,10 @@ export const gameController = {
     this[reqTypes.Winners]();
   },
   [reqTypes.Winners]() {
-    emitEvent(reqTypes.Winners, dB);
+    emitEvent(reqTypes.Winners, { dB });
   },
   [reqTypes.Rooms]() {
-    emitEvent(reqTypes.Rooms, dB);
+    emitEvent(reqTypes.Rooms, { dB });
   },
   [reqTypes.NewRoom](ws: IOwnWebSocket) {
     const creator = dB.users.find((user) => user.id === ws.userIndex);

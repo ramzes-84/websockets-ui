@@ -15,6 +15,7 @@ export enum reqTypes {
   Turn = "turn",
   Attack = "attack",
   Random = "randomAttack",
+  Finish = "finish",
 }
 
 export enum errMsgs {
@@ -51,6 +52,10 @@ export interface AttackFeedbackRes {
   status: Status;
 }
 
+export interface WinnerRes {
+  winPlayer: 0 | 1;
+}
+
 export interface TurnInfo {
   currentPlayer: number;
 }
@@ -85,7 +90,7 @@ export interface Ships extends RandomHit {
   ships: Ship[];
 }
 
-type Position = {
+export type Position = {
   x: number;
   y: number;
 };
@@ -124,4 +129,10 @@ export interface DataBase {
 export interface IOwnWebSocket extends WebSocket {
   userName: string;
   userIndex: number;
+}
+
+export interface EmitEventParams {
+  dB?: DataBase;
+  game?: Game;
+  winPlayer?: 0 | 1;
 }

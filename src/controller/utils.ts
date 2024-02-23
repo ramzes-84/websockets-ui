@@ -1,10 +1,11 @@
-import { Game } from "../dataBase/Game";
 import { User } from "../dataBase/User";
 import { dB } from "../dataBase/dataBase";
 import {
   BoardCell,
-  DataBase,
+  EmitEventParams,
   IOwnWebSocket,
+  Player,
+  Position,
   ResData,
   Ship,
   Ships,
@@ -16,13 +17,17 @@ import {
 } from "../types";
 import { packRes } from "../ws_server/utils";
 
-export const emitEvent = (type: reqTypes, dB: DataBase, game?: Game) => {
-  if (type === reqTypes.Winners) {
+export const emitEvent = (
+  type: reqTypes,
+  { dB, game, winPlayer }: EmitEventParams
+) => {
+  console.log(winPlayer, game);
+  if (type === reqTypes.Winners && dB) {
     dB.users.forEach((user) => {
       user.ownWS.send(packRes(type, dB.users));
     });
   }
-  if (type === reqTypes.Rooms) {
+  if (type === reqTypes.Rooms && dB) {
     dB.users.forEach((user) => {
       user.ownWS.send(packRes(type, dB.rooms));
     });
@@ -42,6 +47,15 @@ export const emitEvent = (type: reqTypes, dB: DataBase, game?: Game) => {
         currentPlayerIndex: player.playerId,
       };
       player.userObj.ownWS.send(packRes(type, startGameRes));
+    });
+  }
+  if (type === reqTypes.Finish && game && typeof winPlayer == "number") {
+    game.players.forEach((player) => {
+      player.userObj.ownWS.send(
+        packRes(type, {
+          winPlayer,
+        })
+      );
     });
   }
 };
@@ -139,4 +153,25 @@ export const generateCoords = () => {
   const x = Math.floor(Math.random() * (max - min) + min);
   const y = Math.floor(Math.random() * (max - min) + min);
   return { x, y };
+};
+
+export const auraCreator = (
+  { playerMap }: Player,
+  { direction, length, position }: Ship
+) => {
+  const killedShipAura: Position[] = [];
+  for (let i = -1; i < length + 1; i++) {
+    for (let j = -1; j < 2; j++) {
+      const x = position.x + (direction ? j : i);
+      const y = position.y + (direction ? i : j);
+      const cell = playerMap![x]?.[y];
+
+      if (!cell) continue;
+      if (!cell.fired) {
+        cell.fired = !cell.fired;
+        killedShipAura.push({ x, y });
+      }
+    }
+  }
+  return killedShipAura;
 };
