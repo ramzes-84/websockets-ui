@@ -121,7 +121,10 @@ export const createLoginRes = ({
   return userDataRes;
 };
 
-export const createPlayerMap = ({ ships }: Ships): BoardCell[][] => {
+export const createPlayerMap = (
+  { ships }: Ships,
+  isBotMap?: true
+): BoardCell[][] => {
   const playerMap = Array.from({ length: 10 }, () =>
     Array.from({ length: 10 }, () => ({
       ...{ shipIndex: -1, fired: false },
@@ -131,7 +134,10 @@ export const createPlayerMap = ({ ships }: Ships): BoardCell[][] => {
   ships.forEach((ship, index) => {
     ship.health = ship.length;
 
-    const { x, y } = ship.position;
+    let { x, y } = ship.position;
+    if (isBotMap) {
+      [y, x] = [x, y];
+    }
 
     for (let i = 0; i < ship.length; i++) {
       const cell = ship.direction
