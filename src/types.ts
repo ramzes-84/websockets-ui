@@ -16,6 +16,7 @@ export enum reqTypes {
   Attack = "attack",
   Random = "randomAttack",
   Finish = "finish",
+  Single = "single_play",
 }
 
 export enum errMsgs {

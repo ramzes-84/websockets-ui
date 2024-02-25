@@ -20,28 +20,55 @@ import {
   generateCoords,
   isCorrectPassw,
   isRegisteredUser,
+  removeBotFromUsers,
 } from "./utils";
 import { Room } from "../dataBase/Room";
 import { Game } from "../dataBase/Game";
+import { User } from "../dataBase/User";
 
 export const gameController = {
+  [reqTypes.Single](ws: IOwnWebSocket) {
+    const roomIndex = this[reqTypes.NewRoom](ws);
+    const bot = new User(
+      { name: "MegaBot", password: "" },
+      {
+        ...ws,
+      } as IOwnWebSocket,
+      true
+    );
+    dB.users.push(bot);
+    this[reqTypes.AddToRoom](bot.ownWS, { indexRoom: roomIndex });
+  },
   [reqTypes.AddShips](ws: IOwnWebSocket, ships: Ships) {
     const game = dB.games.find((game) => game.idGame === ships.gameId);
-    if (game) {
-      game.players[ships.indexPlayer].ships = ships.ships;
-      game.players[ships.indexPlayer].playerMap = createPlayerMap(ships);
-      if (game.players.every((player) => !!player.playerMap === true)) {
-        emitEvent(reqTypes.Start, { dB, game });
-        emitEvent(reqTypes.Turn, { dB, game });
-      }
+    if (!game) throw new Error("Game not found.");
+    game.players[ships.indexPlayer].ships = ships.ships;
+    game.players[ships.indexPlayer].playerMap = createPlayerMap(ships);
+    if (game.players[1].userObj.isBot) {
+      const botShips = ships.ships.map((ship) => {
+        let {
+          position: { x, y },
+          direction,
+        } = ship;
+        direction = !direction;
+        [x, y] = [y, x];
+        return { ...ship, position: { x, y }, direction };
+      });
+      game.players[1].ships = botShips;
+      game.players[1].playerMap = createPlayerMap({ ships: botShips } as Ships);
+    }
+    if (game.players.every((player) => !!player.playerMap === true)) {
+      emitEvent(reqTypes.Start, { dB, game });
+      emitEvent(reqTypes.Turn, { dB, game });
     }
   },
   [reqTypes.Attack](ws: IOwnWebSocket, { x, y, gameId, indexPlayer }: Hit) {
     const game = dB.games.find((game) => game.idGame === gameId);
-    if (game?.isHostsTurn === !indexPlayer) {
+    if (!game) throw new Error("Game not found.");
+    if (game.isHostsTurn === !indexPlayer) {
       const attackedPlayer =
-        indexPlayer === 0 ? game?.players[1] : game?.players[0];
-      if (game && attackedPlayer?.playerMap) {
+        indexPlayer === 0 ? game.players[1] : game.players[0];
+      if (attackedPlayer?.playerMap) {
         const cell = attackedPlayer.playerMap[x][y] as BoardCell;
         cell.fired = true;
         if (cell.shipIndex >= 0) {
@@ -49,25 +76,27 @@ export const gameController = {
           const status: Status = ship.health > 1 ? Status.shot : Status.killed;
           ship.health -= 1;
           game.players.forEach((player) => {
-            player.userObj.ownWS.send(
-              packRes(reqTypes.Attack, {
-                position: { x, y },
-                currentPlayer: indexPlayer,
-                status,
-              })
-            );
+            if (!player.userObj.isBot)
+              player.userObj.ownWS.send(
+                packRes(reqTypes.Attack, {
+                  position: { x, y },
+                  currentPlayer: indexPlayer,
+                  status,
+                })
+              );
           });
           if (status === Status.killed) {
             const killedShipAura = auraCreator(attackedPlayer, ship);
             killedShipAura.forEach(({ x, y }) => {
               game.players.forEach((player) => {
-                player.userObj.ownWS.send(
-                  packRes(reqTypes.Attack, {
-                    position: { x, y },
-                    currentPlayer: indexPlayer,
-                    status: Status.miss,
-                  })
-                );
+                if (!player.userObj.isBot)
+                  player.userObj.ownWS.send(
+                    packRes(reqTypes.Attack, {
+                      position: { x, y },
+                      currentPlayer: indexPlayer,
+                      status: Status.miss,
+                    })
+                  );
               });
             });
           }
@@ -77,22 +106,41 @@ export const gameController = {
           if (isPlayerDead) {
             emitEvent(reqTypes.Finish, { game, winPlayer: indexPlayer });
             game.players[indexPlayer].userObj.wins += 1;
+            if (attackedPlayer.userObj.isBot)
+              dB.users = removeBotFromUsers(attackedPlayer.userObj.id, dB);
             this[reqTypes.Winners]();
           } else {
             emitEvent(reqTypes.Turn, { dB, game });
+            if (!game.isHostsTurn && game.players[1].userObj.isBot) {
+              setTimeout(() => {
+                this[reqTypes.Random](ws, {
+                  gameId: game.idGame,
+                  indexPlayer: 1,
+                });
+              }, 2000);
+            }
           }
         } else {
           game.players.forEach((player) => {
-            player.userObj.ownWS.send(
-              packRes(reqTypes.Attack, {
-                position: { x, y },
-                currentPlayer: indexPlayer,
-                status: Status.miss,
-              })
-            );
+            if (!player.userObj.isBot)
+              player.userObj.ownWS.send(
+                packRes(reqTypes.Attack, {
+                  position: { x, y },
+                  currentPlayer: indexPlayer,
+                  status: Status.miss,
+                })
+              );
           });
           game.isHostsTurn = !game.isHostsTurn;
           emitEvent(reqTypes.Turn, { dB, game });
+          if (!game.isHostsTurn && game.players[1].userObj.isBot) {
+            setTimeout(() => {
+              this[reqTypes.Random](ws, {
+                gameId: game.idGame,
+                indexPlayer: 1,
+              });
+            }, 2000);
+          }
         }
       }
     }
@@ -123,7 +171,11 @@ export const gameController = {
     this[reqTypes.Winners]();
   },
   [reqTypes.Winners]() {
-    emitEvent(reqTypes.Winners, { dB });
+    const users = dB.users
+      .filter((user) => user.wins > 0)
+      .sort((a, b) => b.wins - a.wins);
+    const sortedDB = { ...dB, users };
+    emitEvent(reqTypes.Winners, { dB: sortedDB });
   },
   [reqTypes.Rooms]() {
     emitEvent(reqTypes.Rooms, { dB });
@@ -132,6 +184,7 @@ export const gameController = {
     const creator = dB.users.find((user) => user.id === ws.userIndex);
     creator && dB.rooms.push(new Room(creator));
     this[reqTypes.Rooms]();
+    return Room.roomIndex;
   },
   [reqTypes.AddToRoom](ws: IOwnWebSocket, roomIndex: RoomIndex) {
     const roomIndexInArr = dB.rooms.findIndex(
@@ -151,7 +204,8 @@ export const gameController = {
           idGame: game.idGame,
           idPlayer: user.playerId,
         };
-        user.userObj.ownWS.send(packRes(reqTypes.NewGame, res));
+        if (!user.userObj.isBot)
+          user.userObj.ownWS.send(packRes(reqTypes.NewGame, res));
       });
     }
   },

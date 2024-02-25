@@ -2,6 +2,7 @@ import { User } from "../dataBase/User";
 import { dB } from "../dataBase/dataBase";
 import {
   BoardCell,
+  DataBase,
   EmitEventParams,
   IOwnWebSocket,
   Player,
@@ -23,12 +24,12 @@ export const emitEvent = (
 ) => {
   if (type === reqTypes.Winners && dB) {
     dB.users.forEach((user) => {
-      user.ownWS.send(packRes(type, dB.users));
+      if (!user.isBot) user.ownWS.send(packRes(type, dB.users));
     });
   }
   if (type === reqTypes.Rooms && dB) {
     dB.users.forEach((user) => {
-      user.ownWS.send(packRes(type, dB.rooms));
+      if (!user.isBot) user.ownWS.send(packRes(type, dB.rooms));
     });
   }
   if (type === reqTypes.Turn && game) {
@@ -36,7 +37,8 @@ export const emitEvent = (
       const turnInfoRes: TurnInfo = {
         currentPlayer: game.isHostsTurn ? 0 : 1,
       };
-      player.userObj.ownWS.send(packRes(type, turnInfoRes));
+      if (!player.userObj.isBot)
+        player.userObj.ownWS.send(packRes(type, turnInfoRes));
     });
   }
   if (type === reqTypes.Start && game) {
@@ -45,16 +47,18 @@ export const emitEvent = (
         ships: player.ships as Ship[],
         currentPlayerIndex: player.playerId,
       };
-      player.userObj.ownWS.send(packRes(type, startGameRes));
+      if (!player.userObj.isBot)
+        player.userObj.ownWS.send(packRes(type, startGameRes));
     });
   }
   if (type === reqTypes.Finish && game && typeof winPlayer == "number") {
     game.players.forEach((player) => {
-      player.userObj.ownWS.send(
-        packRes(type, {
-          winPlayer,
-        })
-      );
+      if (!player.userObj.isBot)
+        player.userObj.ownWS.send(
+          packRes(type, {
+            winPlayer,
+          })
+        );
     });
   }
 };
@@ -121,10 +125,7 @@ export const createLoginRes = ({
   return userDataRes;
 };
 
-export const createPlayerMap = (
-  { ships }: Ships,
-  isBotMap?: true
-): BoardCell[][] => {
+export const createPlayerMap = ({ ships }: Ships): BoardCell[][] => {
   const playerMap = Array.from({ length: 10 }, () =>
     Array.from({ length: 10 }, () => ({
       ...{ shipIndex: -1, fired: false },
@@ -134,10 +135,7 @@ export const createPlayerMap = (
   ships.forEach((ship, index) => {
     ship.health = ship.length;
 
-    let { x, y } = ship.position;
-    if (isBotMap) {
-      [y, x] = [x, y];
-    }
+    const { x, y } = ship.position;
 
     for (let i = 0; i < ship.length; i++) {
       const cell = ship.direction
@@ -179,4 +177,9 @@ export const auraCreator = (
     }
   }
   return killedShipAura;
+};
+
+export const removeBotFromUsers = (botId: number, dB: DataBase) => {
+  const users = dB.users.filter((user) => user.id !== botId);
+  return users;
 };

@@ -6,10 +6,11 @@ export class User {
   id: number;
   wins: number;
   ownWS: IOwnWebSocket;
+  isBot: boolean;
 
   static userIndex = 0;
 
-  constructor(newUserData: UserData, ws: IOwnWebSocket) {
+  constructor(newUserData: UserData, ws: IOwnWebSocket, isBot?: true) {
     User.userIndex++;
     this.name = newUserData.name;
     this.password = newUserData.password;
@@ -18,5 +19,6 @@ export class User {
     this.ownWS = ws;
     this.ownWS.userIndex = this.id;
     this.ownWS.userName = this.name;
+    this.isBot = isBot || false;
   }
 }
