@@ -35,7 +35,14 @@ wss.on("connection", (ws: IOwnWebSocket) => {
       gameController[parsedReq.type](ws, parsedReq.data as Hit);
     } else if (parsedReq.type === reqTypes.Random) {
       gameController[parsedReq.type](ws, parsedReq.data as RandomHit);
-    } else gameController[parsedReq.type](ws);
+    } else if (
+      parsedReq.type !== reqTypes.Finish &&
+      parsedReq.type !== reqTypes.Start &&
+      parsedReq.type !== reqTypes.Turn &&
+      parsedReq.type !== reqTypes.NewGame
+    ) {
+      gameController[parsedReq.type](ws);
+    }
   });
 });
 

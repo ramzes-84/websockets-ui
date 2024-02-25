@@ -109,10 +109,6 @@ export const gameController = {
       this[reqTypes.Attack](ws, { x, y, gameId, indexPlayer });
     }
   },
-  [reqTypes.Finish]() {}, //REMOVE
-  [reqTypes.Turn]() {}, //REMOVE
-  [reqTypes.Start]() {}, //REMOVE
-  [reqTypes.NewGame]() {}, //REMOVE
   [reqTypes.Reg](ws: IOwnWebSocket, newUserData: UserData) {
     const registeredUser = isRegisteredUser(newUserData, dB.users);
     const userWithPassw = isCorrectPassw(newUserData, dB.users);
